@@ -186,7 +186,11 @@ export const DEFAULT_BAR_CHART_UICONFIG: IUiConfig = {
     ],
 };
 
-export const COLUMN_BAR_CHART_UICONFIG: IUiConfig = {
+export const DEFAULT_COLUMN_CHART_UICONFIG: IUiConfig = {
+    ...DEFAULT_BAR_CHART_UICONFIG,
+};
+
+export const COLUMN_BAR_CHART_UICONFIG_WITH_OPTIONAL_STACKING: IUiConfig = {
     buckets: {
         measures: {
             ...measuresBase,
@@ -237,6 +241,23 @@ export const DEFAULT_LINE_UICONFIG: IUiConfig = {
 };
 
 export const DEFAULT_AREA_UICONFIG: IUiConfig = {
+    buckets: {
+        measures: {
+            ...measuresBase,
+        },
+        view: {
+            ...viewBase,
+        },
+        stack: {
+            ...stackBase,
+        },
+        ...defaultFilters,
+    },
+    ...defaultRootUiConfigProperties,
+    ...disabledOpenAsReportConfig,
+};
+
+export const AREA_UICONFIG_WITH_OPTIONAL_STACKING: IUiConfig = {
     buckets: {
         measures: {
             ...measuresBase,
@@ -487,6 +508,34 @@ export const COMBO_CHART_UICONFIG_DEPRECATED: IUiConfig = {
 };
 
 export const COMBO_CHART_UICONFIG: IUiConfig = {
+    buckets: {
+        measures: {
+            ...measuresBase,
+            canAddItems: true,
+            allowSelectChartType: true,
+        },
+        secondary_measures: {
+            ...measuresBase,
+            canAddItems: true,
+            allowSelectChartType: true,
+            allowShowOnSecondaryAxis: true,
+        },
+        view: {
+            ...viewBase,
+            canAddItems: true,
+            itemsLimit: 1,
+        },
+        ...defaultFilters,
+    },
+    ...defaultRootUiConfigProperties,
+    supportedOverTimeComparisonTypes: [
+        OverTimeComparisonTypes.SAME_PERIOD_PREVIOUS_YEAR,
+        OverTimeComparisonTypes.PREVIOUS_PERIOD,
+    ],
+    supportedChartTypes: [VisualizationTypes.COLUMN, VisualizationTypes.LINE, VisualizationTypes.AREA],
+};
+
+export const COMBO_CHART_UICONFIG_WITH_OPTIONAL_STACKING: IUiConfig = {
     buckets: {
         measures: {
             ...measuresBase,

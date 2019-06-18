@@ -21,12 +21,19 @@ import {
     IVisualizationProperties,
     IReferences,
 } from "../../../interfaces/Visualization";
-import { DEFAULT_AREA_UICONFIG, MAX_STACKS_COUNT, MAX_VIEW_COUNT } from "../../../constants/uiConfig";
+import {
+    AREA_UICONFIG_WITH_OPTIONAL_STACKING,
+    DEFAULT_AREA_UICONFIG,
+    MAX_STACKS_COUNT,
+    MAX_VIEW_COUNT,
+} from "../../../constants/uiConfig";
 
 import { BUCKETS } from "../../../constants/bucket";
 
 import {
     sanitizeUnusedFilters,
+    getMeasureItems,
+    getAttributeItemsWithoutStacks,
     getStackItems,
     getDateItems,
     getAllAttributeItemsWithPreference,
@@ -45,7 +52,8 @@ import {
     removeImmutableOptionalStackingProperties,
 } from "../../../utils/propertiesHelper";
 import {
-    AREA_CHART_SUPPORTED_PROPERTIES,
+    AREA_CHART_SUPPORTED_OPTIONAL_STACKING_PROPERTIES,
+    BASE_CHART_SUPPORTED_PROPERTIES,
     OPTIONAL_STACKING_PROPERTIES,
 } from "../../../constants/supportedProperties";
 import { VisualizationObject } from "@gooddata/typings";
@@ -55,13 +63,19 @@ export class PluggableAreaChart extends PluggableBaseChart {
     constructor(props: IVisConstruct) {
         super(props);
         this.type = VisualizationTypes.AREA;
-        this.defaultControlsProperties = {
-            stackMeasures: true,
-        };
+        this.defaultControlsProperties = this.isOptionalStackingEnabled()
+            ? {
+                  stackMeasures: true,
+              }
+            : {};
         this.initializeProperties(props.visualizationProperties);
     }
 
     public getUiConfig(): IUiConfig {
+        if (this.isOptionalStackingEnabled()) {
+            return cloneDeep(AREA_UICONFIG_WITH_OPTIONAL_STACKING);
+        }
+
         return cloneDeep(DEFAULT_AREA_UICONFIG);
     }
 
@@ -86,7 +100,12 @@ export class PluggableAreaChart extends PluggableBaseChart {
 
         this.configureBuckets(newReferencePoint);
 
-        newReferencePoint = setAreaChartUiConfig(newReferencePoint, this.intl, this.type);
+        newReferencePoint = setAreaChartUiConfig(
+            newReferencePoint,
+            this.intl,
+            this.type,
+            this.isOptionalStackingEnabled(),
+        );
         newReferencePoint = configurePercent(newReferencePoint, false);
         newReferencePoint = configureOverTimeComparison(newReferencePoint);
 
@@ -103,7 +122,9 @@ export class PluggableAreaChart extends PluggableBaseChart {
     }
 
     protected configureBuckets(extendedReferencePoint: IExtendedReferencePoint): void {
-        const { measures, views, stacks } = this.getBucketItems(extendedReferencePoint);
+        const { measures, views, stacks } = this.isOptionalStackingEnabled()
+            ? this.getBucketItemsWithOptionalStacking(extendedReferencePoint)
+            : this.getBucketItems(extendedReferencePoint);
 
         set(extendedReferencePoint, BUCKETS, [
             {
@@ -122,7 +143,9 @@ export class PluggableAreaChart extends PluggableBaseChart {
     }
 
     protected getSupportedPropertiesList() {
-        return AREA_CHART_SUPPORTED_PROPERTIES;
+        return this.isOptionalStackingEnabled()
+            ? AREA_CHART_SUPPORTED_OPTIONAL_STACKING_PROPERTIES
+            : BASE_CHART_SUPPORTED_PROPERTIES;
     }
 
     protected renderConfigurationPanel() {
@@ -147,7 +170,7 @@ export class PluggableAreaChart extends PluggableBaseChart {
     }
 
     private updateCustomSupportedProperties(mdObject: VisualizationObject.IVisualizationObjectContent): void {
-        if (haveManyViewItems(mdObject)) {
+        if (haveManyViewItems(mdObject) && this.isOptionalStackingEnabled()) {
             this.addSupportedProperties(OPTIONAL_STACKING_PROPERTIES);
             this.setCustomControlsProperties({
                 stackMeasures: false,
@@ -185,6 +208,35 @@ export class PluggableAreaChart extends PluggableBaseChart {
     }
 
     private getBucketItems(referencePoint: IReferencePoint) {
+        const buckets = get(referencePoint, BUCKETS, []);
+        const numberOfMeasuresItems = getMeasureItems(buckets).length;
+        let views: IBucketItem[] = [];
+        let stacks: IBucketItem[] = getStackItems(buckets);
+        const dateItems = getDateItems(buckets);
+        const allAttributes = this.getAllAttributes(buckets);
+        const measures = getFilteredMeasuresForStackedCharts(buckets);
+
+        if (dateItems.length) {
+            views = dateItems.slice(0, 1);
+            if (numberOfMeasuresItems <= 1 && allAttributes.length > 1) {
+                stacks = this.filterStackItems(allAttributes);
+            }
+        } else {
+            if (numberOfMeasuresItems <= 1 && allAttributes.length > 1) {
+                stacks = allAttributes.slice(1, 2);
+            }
+
+            views = getAttributeItemsWithoutStacks(buckets).slice(0, 1);
+        }
+
+        return {
+            measures,
+            views,
+            stacks,
+        };
+    }
+
+    private getBucketItemsWithOptionalStacking(referencePoint: IReferencePoint) {
         const buckets = get(referencePoint, BUCKETS, []);
         const measures = getFilteredMeasuresForStackedCharts(buckets);
         const dateItems = getDateItems(buckets);

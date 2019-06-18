@@ -54,17 +54,18 @@ export class PluggableColumnBarCharts extends PluggableBaseChart {
             );
 
             newExt = getReferencePointWithSupportedProperties(newExt, this.supportedPropertiesList);
-            return setColumnBarChartUiConfig(newExt, this.intl);
+            return setColumnBarChartUiConfig(newExt, this.intl, this.isOptionalStackingEnabled());
         });
     }
 
     public isOpenAsReportSupported(): boolean {
-        return (
-            super.isOpenAsReportSupported() &&
-            !haveManyViewItems(this.mdObject) &&
-            !isStackingMeasure(this.visualizationProperties) &&
-            !isStackingToPercent(this.visualizationProperties)
-        );
+        const supported = super.isOpenAsReportSupported();
+        return this.isOptionalStackingEnabled()
+            ? supported &&
+                  !haveManyViewItems(this.mdObject) &&
+                  !isStackingMeasure(this.visualizationProperties) &&
+                  !isStackingToPercent(this.visualizationProperties)
+            : supported;
     }
 
     protected configureBuckets(extendedReferencePoint: IExtendedReferencePoint): void {

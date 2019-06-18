@@ -29,6 +29,11 @@ describe("PluggableColumnBarCharts", () => {
     }
 
     describe("optional stacking", () => {
+        const props: IVisConstruct = {
+            ...defaultProps,
+            featureFlags: { enableExtendedStacking: true },
+        };
+
         const options: IVisProps = {
             dataSource: null,
             resultSpec: testMocks.dummyBaseChartResultSpec,
@@ -40,7 +45,7 @@ describe("PluggableColumnBarCharts", () => {
         };
 
         it("should place third attribute to stack bucket", async () => {
-            const columnChart = createComponent(defaultProps);
+            const columnChart = createComponent(props);
             const mockRefPoint = referencePointMocks.oneMetricAndManyCategoriesReferencePoint;
             const expectedBuckets: IBucket[] = [
                 {
@@ -71,7 +76,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should reuse one measure, two categories and one category as stack", async () => {
-            const columnChart = createComponent(defaultProps);
+            const columnChart = createComponent(props);
             const mockRefPoint = referencePointMocks.oneMetricAndManyCategoriesAndOneStackRefPoint;
             const expectedBuckets: IBucket[] = [
                 {
@@ -102,7 +107,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should reuse all measures, two categories and no stack", async () => {
-            const columnChart = createComponent(defaultProps);
+            const columnChart = createComponent(props);
             const mockRefPoint = referencePointMocks.multipleMetricsAndCategoriesReferencePoint;
             const expectedBuckets: IBucket[] = [
                 {
@@ -143,7 +148,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should return reference point without Date in stacks", async () => {
-            const columnChart = createComponent(defaultProps);
+            const columnChart = createComponent(props);
             const mockRefPoint = referencePointMocks.dateAsFirstCategoryReferencePoint;
             const expectedBuckets: IBucket[] = [
                 {
@@ -174,7 +179,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should keep only one date attribute in view by bucket", async () => {
-            const columnChart = createComponent(defaultProps);
+            const columnChart = createComponent(props);
             const mockRefPoint = referencePointMocks.dateAttributeOnRowAndColumnReferencePoint;
             const expectedBuckets: IBucket[] = [
                 {
@@ -196,7 +201,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should cut out measures tail when getting many measures, no category and one stack", async () => {
-            const columnChart = createComponent(defaultProps);
+            const columnChart = createComponent(props);
             const mockRefPoint = referencePointMocks.multipleMetricsOneStackByReferencePoint;
             const expectedBuckets: IBucket[] = [
                 {
@@ -229,6 +234,7 @@ describe("PluggableColumnBarCharts", () => {
         it("should update supported properties list base on axis type", async () => {
             const mockProps = {
                 ...defaultProps,
+                featureFlags: { enableExtendedStacking: true },
                 pushData: jest.fn(),
             };
             const chart = createComponent(mockProps);
@@ -236,29 +242,30 @@ describe("PluggableColumnBarCharts", () => {
             await chart.getExtendedReferencePoint(
                 referencePointMocks.oneMetricAndCategoryAndStackReferencePoint,
             );
-            expect(get(chart, "supportedPropertiesList")).toEqual(
-                COLUMN_CHART_SUPPORTED_PROPERTIES[AXIS.PRIMARY].filter(
-                    (props: string) => props !== OPTIONAL_STACKING_PROPERTIES[0],
-                ),
-            );
+            expect(get(chart, "supportedPropertiesList")).toEqual([
+                ...COLUMN_CHART_SUPPORTED_PROPERTIES[AXIS.PRIMARY],
+                OPTIONAL_STACKING_PROPERTIES[1],
+            ]);
 
             await chart.getExtendedReferencePoint(
                 referencePointMocks.measuresOnSecondaryAxisAndAttributeReferencePoint,
             );
-            expect(get(chart, "supportedPropertiesList")).toEqual(
-                COLUMN_CHART_SUPPORTED_PROPERTIES[AXIS.SECONDARY],
-            );
+            expect(get(chart, "supportedPropertiesList")).toEqual([
+                ...COLUMN_CHART_SUPPORTED_PROPERTIES[AXIS.SECONDARY],
+                ...OPTIONAL_STACKING_PROPERTIES,
+            ]);
 
             await chart.getExtendedReferencePoint(
                 referencePointMocks.multipleMetricsAndCategoriesReferencePoint,
             );
-            expect(get(chart, "supportedPropertiesList")).toEqual(
-                COLUMN_CHART_SUPPORTED_PROPERTIES[AXIS.DUAL],
-            );
+            expect(get(chart, "supportedPropertiesList")).toEqual([
+                ...COLUMN_CHART_SUPPORTED_PROPERTIES[AXIS.DUAL],
+                ...OPTIONAL_STACKING_PROPERTIES,
+            ]);
         });
 
         it("should disable open as report for insight have two view items", () => {
-            const visualization = createComponent(defaultProps);
+            const visualization = createComponent(props);
             const mdObject = testMocks.twoViewItemsMdObject;
 
             visualization.update(options, {}, mdObject, undefined);
@@ -267,7 +274,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should disable open as report for insight have properties stackMeasures or stackMeasuresToPercent", () => {
-            const visualization = createComponent(defaultProps);
+            const visualization = createComponent(props);
             let visualizationProperties;
             let mdObject;
             let isOpenAsReportSupported;
@@ -300,7 +307,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should enable open as report for normal column chart", () => {
-            const visualization = createComponent(defaultProps);
+            const visualization = createComponent(props);
             const mdObject = testMocks.twoMeasuresMdObject;
 
             visualization.update(options, {}, mdObject, undefined);
@@ -309,7 +316,7 @@ describe("PluggableColumnBarCharts", () => {
         });
 
         it("should retain stacking config after adding new measure", async () => {
-            const columnChart = createComponent(defaultProps);
+            const columnChart = createComponent(props);
 
             // step1: init column chart with 1M, 1VB, 1SB with 'Stack to 100%' enabled
             const initialState =

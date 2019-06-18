@@ -17,6 +17,7 @@ import { OverTimeComparisonTypes } from "../../../interfaces/OverTimeComparison"
 export function setColumnBarChartUiConfig(
     referencePoint: IExtendedReferencePoint,
     intl: InjectedIntl,
+    isEnableOptionalStacking: boolean = false,
 ): IExtendedReferencePoint {
     const referencePointConfigured = cloneDeep(referencePoint);
 
@@ -30,7 +31,10 @@ export function setColumnBarChartUiConfig(
     const measures = getMeasureItems(buckets);
 
     if (measures.length > 1) {
-        const warningMessage = getTranslation("dashboard.bucket.measure_stack_by_warning", intl);
+        const warningMessageId = isEnableOptionalStacking
+            ? "dashboard.bucket.measure_stack_by_warning"
+            : "dashboard.bucket.category_stack_by_warning";
+        const warningMessage = getTranslation(warningMessageId, intl);
 
         set(referencePointConfigured, [UICONFIG, BUCKETS, BucketNames.STACK, "canAddItems"], false);
         set(
